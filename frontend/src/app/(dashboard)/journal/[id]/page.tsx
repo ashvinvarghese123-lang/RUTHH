@@ -35,6 +35,7 @@ export default function JournalViewPage() {
   const mood = MOODS.find((m) => m.value === entry.mood);
 
   async function handleDelete() {
+    if (!entry) return;
     if (!confirm("Delete this journal page? This can't be undone.")) return;
     await deleteJournal.mutateAsync(entry.id);
     show("Entry deleted.");
