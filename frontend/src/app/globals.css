@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-fraunces: "Fraunces", Georgia, serif;
+  --font-inter: "Inter", -apple-system, Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper text-text font-sans antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-serif;
+  }
+
+  ::selection {
+    @apply bg-accent text-ink;
+  }
+
+  /* Visible keyboard focus everywhere — accessibility floor */
+  :focus-visible {
+    outline: 2px solid #1B1B1B;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .paper-card {
+    @apply bg-card rounded-card shadow-soft border border-black/5;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill bg-ink text-paper px-6 py-3
+           text-sm font-medium tracking-wide transition-transform duration-200 ease-out
+           hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill bg-transparent text-ink px-6 py-3
+           text-sm font-medium tracking-wide border border-ink/15 transition-colors duration-200
+           hover:bg-ink/5;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-ink/10 bg-card px-4 py-3 text-sm text-text
+           placeholder:text-ink/40 outline-none transition-shadow duration-150
+           focus:border-ink/25 focus:shadow-soft;
+  }
+}
+
+/* Respect reduced-motion preferences for all custom animation utilities */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,18 @@
+# Local Postgres for development. Run: docker compose up -d
+# Then set DATABASE_URL in backend/.env to the value shown below.
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ruth
+      POSTGRES_PASSWORD: ruth
+      POSTGRES_DB: ruth
+    ports:
+      - "5432:5432"
+    volumes:
+      - ruth_pg_data:/var/lib/postgresql/data
+
+volumes:
+  ruth_pg_data:

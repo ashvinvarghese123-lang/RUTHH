@@ -1,0 +1,14 @@
+{
+  "name": "ruth",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ruth — Document Yourself. An AI-powered digital diary.",
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "seed": "npm run seed --workspace=backend"
+  }
+}

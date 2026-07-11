@@ -1,0 +1,227 @@
+// ============================================================
+// RUTH — "Document Yourself"
+// Prisma schema — PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum Mood {
+  HAPPY
+  SAD
+  EXCITED
+  CALM
+  ANXIOUS
+  GRATEFUL
+  ANGRY
+  TIRED
+  LOVED
+  NEUTRAL
+  HOPEFUL
+  NOSTALGIC
+}
+
+enum AIMode {
+  KEEP_ORIGINAL
+  DIARY_STYLE
+  STORYTELLING
+  MINIMAL
+}
+
+enum PermissionLevel {
+  VIEW_ONLY
+  COMMENT
+  CLOSE_FRIEND
+  FAMILY
+  PARTNER
+}
+
+enum NotificationType {
+  SHARED_JOURNAL
+  NEW_COMMENT
+  MEMORY_REMINDER
+  WRITING_REMINDER
+  ACCESS_REVOKED
+}
+
+// ------------------------------------------------------------
+// CORE MODELS
+// ------------------------------------------------------------
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  isEmailVerified   Boolean  @default(false)
+  emailVerifyToken  String?
+  emailVerifyExpiry DateTime?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  profile           Profile?
+  journalEntries    JournalEntry[]
+  sessions          Session[]
+  notifications     Notification[]
+  settings          Settings?
+
+  sharedByMe        SharedEntry[]   @relation("SharedByOwner")
+  sharedWithMe      SharedEntry[]   @relation("SharedWithRecipient")
+
+  @@map("users")
+}
+
+model Profile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  displayName  String
+  bio          String?  @default("")
+  profilePhoto String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  rawContent  String   @db.Text // original user notes before AI transformation
+  content     String   @db.Text // final rich-text / HTML content
+  aiMode      AIMode?  // which AI mode produced `content`, null if untouched
+
+  suggestedTitle   String?
+  suggestedQuote   String?
+  reflection       String? @db.Text
+  gratitude        String? @db.Text
+
+  mood        Mood     @default(NEUTRAL)
+  location    String?
+  weather     String?
+  tags        String[] @default([])
+
+  isFavorite  Boolean  @default(false)
+  isPrivate   Boolean  @default(true)
+  entryDate   DateTime @default(now()) // the date the entry is "about"
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos      Photo[]
+  sharedWith  SharedEntry[]
+
+  @@index([userId, entryDate])
+  @@index([userId, isFavorite])
+  @@map("journal_entries")
+}
+
+model Photo {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  url            String
+  publicId       String   // storage provider id (e.g. Cloudinary public_id)
+  width          Int?
+  height         Int?
+  position       Int      @default(0) // ordering within the entry / AI placement
+  paragraphAnchor Int?    // index of paragraph the AI placed this photo near
+
+  createdAt      DateTime @default(now())
+
+  @@index([journalEntryId, position])
+  @@map("photos")
+}
+
+model SharedEntry {
+  id             String          @id @default(uuid())
+  journalEntryId String
+  journalEntry   JournalEntry    @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  ownerId        String
+  owner          User            @relation("SharedByOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  recipientId    String?
+  recipient      User?           @relation("SharedWithRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  recipientEmail String?         // for share-by-email invites not yet matched to a user
+  linkToken      String?         @unique // for "generate private link" sharing
+
+  permission     PermissionLevel @default(VIEW_ONLY)
+  revoked        Boolean         @default(false)
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([ownerId])
+  @@index([recipientId])
+  @@map("shared_entries")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  body      String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Settings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  language           String   @default("en")
+  darkMode           Boolean  @default(false) // reserved for future release
+  writingReminder    Boolean  @default(true)
+  reminderHour       Int      @default(20)
+  memoryReminders    Boolean  @default(true)
+  emailNotifications Boolean  @default(true)
+
+  updatedAt          DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
