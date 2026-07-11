@@ -48,7 +48,7 @@ export default function LandingPage() {
           A quiet place to write your days as they were — then let Ruth help you tell them beautifully.
         </p>
 
-        <div className="mt-10 flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row">
+        <div className="mt-10 flex w-full max-w-xs flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
           <Link href="/signup" className="btn-primary">
             Start writing
           </Link>
