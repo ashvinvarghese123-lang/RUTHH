@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Home, CalendarDays, Images, Search, Settings, PenLine } from "lucide-react";
+import { Home, CalendarDays, Images, Search, Settings, PenLine, Users } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
-  { href: "/home", label: "Home", icon: Home },
+  { href: "/home", label: "Feed", icon: Home },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/gallery", label: "Gallery", icon: Images },
+  { href: "/friends", label: "Friends", icon: Users },
   { href: "/search", label: "Search", icon: Search },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

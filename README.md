@@ -141,5 +141,3 @@ system rather than an unfinished sprawl:
 - Rich text is a lightweight `contentEditable` editor (bold/italic/underline/lists) rather than a heavyweight framework like TipTap — it's real and functional, just intentionally minimal.
 - Semantic search computes embeddings on the fly rather than pre-storing them in a vector column; fine at demo scale, worth revisiting (e.g. `pgvector`) before it's handling thousands of entries per user.
 - AI photo placement returns paragraph indices rather than physically interleaving `<img>` tags into the HTML — the frontend currently renders photos as a grid below the text; wiring the suggested placement into the rendered content is a small, well-scoped follow-up.
-#   R U T H H  
- 

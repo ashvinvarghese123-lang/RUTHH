@@ -2,9 +2,10 @@ import { Request, Response } from "express";
 import { prisma } from "../config/db";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError, ok } from "../utils/apiResponse";
+import { canViewByVisibility } from "../services/friendship.service";
 
 export const createJournal = asyncHandler(async (req: Request, res: Response) => {
-  const { title, rawContent, content, mood, location, weather, tags, isFavorite, isPrivate, entryDate } = req.body;
+  const { title, rawContent, content, mood, location, weather, tags, isFavorite, visibility, entryDate } = req.body;
 
   const entry = await prisma.journalEntry.create({
     data: {
@@ -17,7 +18,7 @@ export const createJournal = asyncHandler(async (req: Request, res: Response) =>
       weather,
       tags: tags ?? [],
       isFavorite: isFavorite ?? false,
-      isPrivate: isPrivate ?? true,
+      visibility: visibility ?? "PUBLIC",
       entryDate: entryDate ? new Date(entryDate) : new Date(),
     },
     include: { photos: true },
@@ -55,15 +56,35 @@ export const deleteJournal = asyncHandler(async (req: Request, res: Response) =>
 
 export const getJournal = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const meId = req.user!.userId;
 
   const entry = await prisma.journalEntry.findUnique({
     where: { id },
-    include: { photos: { orderBy: { position: "asc" } } },
+    include: {
+      photos: { orderBy: { position: "asc" } },
+      user: { select: { username: true, profile: { select: { displayName: true, profilePhoto: true } } } },
+      likes: { where: { userId: meId }, select: { id: true } },
+      _count: { select: { likes: true, comments: true } },
+    },
   });
   if (!entry) throw new ApiError(404, "Journal entry not found.");
-  if (entry.userId !== req.user!.userId) throw new ApiError(403, "You don't have access to this entry.");
 
-  return ok(res, { entry });
+  const viaVisibility = await canViewByVisibility(entry.userId, entry.visibility, meId);
+  let allowed = viaVisibility;
+
+  if (!allowed) {
+    const directShare = await prisma.sharedEntry.findFirst({
+      where: { journalEntryId: id, recipientId: meId, revoked: false },
+    });
+    allowed = Boolean(directShare);
+  }
+
+  if (!allowed) throw new ApiError(403, "You don't have access to this entry.");
+
+  const { likes, _count, ...rest } = entry;
+  return ok(res, {
+    entry: { ...rest, likeCount: _count.likes, commentCount: _count.comments, likedByMe: likes.length > 0 },
+  });
 });
 
 export const listJournals = asyncHandler(async (req: Request, res: Response) => {

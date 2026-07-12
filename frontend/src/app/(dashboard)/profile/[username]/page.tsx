@@ -3,17 +3,25 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { Camera } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { FriendButton } from "@/components/friends/FriendButton";
 import { api, unwrap } from "@/lib/api";
 import { Profile } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 
+interface ProfileStats {
+  journalCount: number;
+  photoCount: number;
+  sharedCount: number;
+  friendCount: number;
+}
+
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const { user: currentUser } = useAuth();
   const { show } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -21,9 +29,7 @@ export default function ProfilePage() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["profile", username],
     queryFn: () =>
-      unwrap<{ profile: Profile; stats: { journalCount: number; photoCount: number; sharedCount: number }; isOwner: boolean }>(
-        api.get(`/profile/${username}`)
-      ),
+      unwrap<{ profile: Profile; stats: ProfileStats; isOwner: boolean }>(api.get(`/profile/${username}`)),
   });
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -84,9 +90,22 @@ export default function ProfilePage() {
         <p className="text-sm text-ink/45">@{username}</p>
         {profile.bio && <p className="mx-auto mt-3 max-w-sm text-sm text-ink/60">{profile.bio}</p>}
 
-        <div className="mx-auto mt-8 grid max-w-xs grid-cols-3 gap-4">
+        {!isOwner && (
+          <div className="mt-4 flex justify-center">
+            <FriendButton username={username} />
+          </div>
+        )}
+
+        <div className="mx-auto mt-8 grid max-w-sm grid-cols-4 gap-2">
           <Stat label="Journals" value={stats.journalCount} />
           <Stat label="Photos" value={stats.photoCount} />
+          {isOwner ? (
+            <Link href="/friends">
+              <Stat label="Friends" value={stats.friendCount} />
+            </Link>
+          ) : (
+            <Stat label="Friends" value={stats.friendCount} />
+          )}
           <Stat label="Shared" value={stats.sharedCount} />
         </div>
       </div>

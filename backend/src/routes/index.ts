@@ -9,6 +9,9 @@ import notificationRoutes from "./notification.routes";
 import settingsRoutes from "./settings.routes";
 import searchRoutes from "./search.routes";
 import calendarRoutes from "./calendar.routes";
+import friendRoutes from "./friend.routes";
+import feedRoutes from "./feed.routes";
+import commentRoutes from "./comment.routes";
 
 const router = Router();
 
@@ -22,6 +25,9 @@ router.use("/notifications", notificationRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/search", searchRoutes);
 router.use("/calendar", calendarRoutes);
+router.use("/friends", friendRoutes);
+router.use("/feed", feedRoutes);
+router.use("/comments", commentRoutes);
 
 router.get("/health", (_req, res) => res.json({ success: true, message: "Ruth API is running." }));
 

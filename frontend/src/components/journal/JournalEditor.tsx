@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Star, Lock, Users, X } from "lucide-react";
+import { Star, Lock, Users, Globe, X } from "lucide-react";
 import clsx from "clsx";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -12,9 +12,15 @@ import { AIWriterPanel } from "@/components/journal/AIWriterPanel";
 import { RichTextEditor } from "@/components/journal/RichTextEditor";
 import { useToast } from "@/components/ui/Toast";
 import { api, unwrap } from "@/lib/api";
-import { JournalEntry, Mood, Photo } from "@/types";
+import { JournalEntry, Mood, Photo, Visibility } from "@/types";
 
 const AUTOSAVE_DELAY = 1500;
+
+const VISIBILITY_CHOICES: { value: Visibility; label: string; icon: React.ReactNode }[] = [
+  { value: "PUBLIC", label: "Public", icon: <Globe size={14} /> },
+  { value: "FRIENDS", label: "Friends", icon: <Users size={14} /> },
+  { value: "PRIVATE", label: "Private", icon: <Lock size={14} /> },
+];
 
 export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry }) {
   const router = useRouter();
@@ -33,7 +39,7 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
   const [tags, setTags] = useState<string[]>(existingEntry?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [isFavorite, setIsFavorite] = useState(existingEntry?.isFavorite ?? false);
-  const [isPrivate, setIsPrivate] = useState(existingEntry?.isPrivate ?? true);
+  const [visibility, setVisibility] = useState<Visibility>(existingEntry?.visibility ?? "PUBLIC");
   const [photos, setPhotos] = useState<Photo[]>(existingEntry?.photos ?? []);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -54,7 +60,7 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
     debounceRef.current = setTimeout(async () => {
       try {
         await api.patch(`/journals/${id}`, {
-          title, rawContent, content, mood, location, weather, tags, isFavorite, isPrivate,
+          title, rawContent, content, mood, location, weather, tags, isFavorite, visibility,
           entryDate: new Date(entryDate).toISOString(),
         });
         setSaveState("saved");
@@ -64,7 +70,7 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
     }, AUTOSAVE_DELAY);
     return () => clearTimeout(debounceRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, rawContent, content, mood, location, weather, tags, isFavorite, isPrivate, entryDate]);
+  }, [title, rawContent, content, mood, location, weather, tags, isFavorite, visibility, entryDate]);
 
   async function handleSave() {
     if (!title.trim() || !rawContent.trim()) {
@@ -77,7 +83,7 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
         const { entry } = await unwrap<{ entry: JournalEntry }>(
           api.post("/journals", {
             title, rawContent, content: content || rawContent, mood, location, weather, tags,
-            isFavorite, isPrivate, entryDate: new Date(entryDate).toISOString(),
+            isFavorite, visibility, entryDate: new Date(entryDate).toISOString(),
           })
         );
         setId(entry.id);
@@ -96,7 +102,7 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
         router.push(`/journal/${entry.id}`);
       } else {
         await api.patch(`/journals/${id}`, {
-          title, rawContent, content, mood, location, weather, tags, isFavorite, isPrivate,
+          title, rawContent, content, mood, location, weather, tags, isFavorite, visibility,
           entryDate: new Date(entryDate).toISOString(),
         });
         show("Your entry has been saved.");
@@ -202,10 +208,20 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
         </div>
       </div>
 
-      <div className="mb-8 flex flex-wrap gap-3">
-        <ToggleChip active={isFavorite} onClick={() => setIsFavorite(!isFavorite)} icon={<Star size={14} />} label="Favorite" />
-        <ToggleChip active={isPrivate} onClick={() => setIsPrivate(true)} icon={<Lock size={14} />} label="Private" />
-        <ToggleChip active={!isPrivate} onClick={() => setIsPrivate(false)} icon={<Users size={14} />} label="Shareable" />
+      <div className="mb-8">
+        <p className="mb-2 text-sm font-medium text-ink/70">Who can see this</p>
+        <div className="flex flex-wrap gap-3">
+          <ToggleChip active={isFavorite} onClick={() => setIsFavorite(!isFavorite)} icon={<Star size={14} />} label="Favorite" />
+          {VISIBILITY_CHOICES.map((v) => (
+            <ToggleChip
+              key={v.value}
+              active={visibility === v.value}
+              onClick={() => setVisibility(v.value)}
+              icon={v.icon}
+              label={v.label}
+            />
+          ))}
+        </div>
       </div>
 
       <Button onClick={handleSave} isLoading={isSubmitting} className="w-full sm:w-auto">

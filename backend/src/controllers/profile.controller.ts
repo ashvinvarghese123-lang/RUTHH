@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError, ok } from "../utils/apiResponse";
 import { uploadImageBuffer } from "../services/cloudinary.service";
+import { areFriends } from "../services/friendship.service";
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const { username } = req.params;
@@ -14,17 +15,29 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   if (!user) throw new ApiError(404, "Profile not found.");
 
   const isOwner = req.user?.userId === user.id;
+  const viewerIsFriend = !isOwner && req.user ? await areFriends(user.id, req.user.userId) : false;
 
-  const [journalCount, photoCount, sharedCount] = await Promise.all([
-    prisma.journalEntry.count({ where: { userId: user.id, ...(isOwner ? {} : { isPrivate: false }) } }),
+  const visibleVisibilities = isOwner
+    ? undefined // owner sees everything
+    : viewerIsFriend
+    ? { in: ["PUBLIC", "FRIENDS"] as const }
+    : ("PUBLIC" as const);
+
+  const [journalCount, photoCount, sharedCount, friendCount] = await Promise.all([
+    prisma.journalEntry.count({
+      where: { userId: user.id, ...(visibleVisibilities ? { visibility: visibleVisibilities } : {}) },
+    }),
     prisma.photo.count({ where: { journalEntry: { userId: user.id } } }),
     prisma.sharedEntry.count({ where: { ownerId: user.id, revoked: false } }),
+    prisma.friendship.count({
+      where: { status: "ACCEPTED", OR: [{ requesterId: user.id }, { addresseeId: user.id }] },
+    }),
   ]);
 
   return ok(res, {
     username: user.username,
     profile: user.profile,
-    stats: { journalCount, photoCount, sharedCount },
+    stats: { journalCount, photoCount, sharedCount, friendCount },
     isOwner,
   });
 });

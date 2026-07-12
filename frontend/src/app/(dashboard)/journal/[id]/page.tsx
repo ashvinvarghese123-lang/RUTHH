@@ -7,10 +7,12 @@ import { format } from "date-fns";
 import { Pencil, Share2, Trash2, Heart, MapPin, CloudSun } from "lucide-react";
 import { useJournal, useDeleteJournal } from "@/hooks/useJournals";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Button } from "@/components/ui/Button";
 import { ShareModal } from "@/components/share/ShareModal";
+import { LikeButton } from "@/components/journal/LikeButton";
+import { CommentSection } from "@/components/journal/CommentSection";
 import { MOODS } from "@/types";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/context/AuthContext";
 
 export default function JournalViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ export default function JournalViewPage() {
   const { data, isLoading } = useJournal(id);
   const deleteJournal = useDeleteJournal();
   const { show } = useToast();
+  const { user } = useAuth();
   const [shareOpen, setShareOpen] = useState(false);
 
   if (isLoading) {
@@ -33,6 +36,7 @@ export default function JournalViewPage() {
   if (!entry) return null;
 
   const mood = MOODS.find((m) => m.value === entry.mood);
+  const isOwner = user?.id === entry.userId;
 
   async function handleDelete() {
     if (!entry) return;
@@ -45,18 +49,38 @@ export default function JournalViewPage() {
   return (
     <article className="mx-auto max-w-2xl px-4 pb-32 pt-8 sm:px-6 sm:pt-10 md:px-10">
       <div className="mb-6 flex items-center justify-between text-sm text-ink/50">
-        <span>{format(new Date(entry.entryDate), "EEEE, MMMM d, yyyy")}</span>
-        <div className="flex items-center gap-3">
-          <Link href={`/journal/${entry.id}/edit`} aria-label="Edit" className="hover:text-ink">
-            <Pencil size={17} />
+        {entry.user ? (
+          <Link href={`/profile/${entry.user.username}`} className="flex items-center gap-2 hover:opacity-80">
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-medium text-ink">
+              {entry.user.profile.profilePhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={entry.user.profile.profilePhoto} alt="" className="h-full w-full object-cover" />
+              ) : (
+                entry.user.profile.displayName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-ink/80">{entry.user.profile.displayName}</p>
+              <p className="text-xs text-ink/40">{format(new Date(entry.entryDate), "EEEE, MMMM d, yyyy")}</p>
+            </div>
           </Link>
-          <button onClick={() => setShareOpen(true)} aria-label="Share" className="hover:text-ink">
-            <Share2 size={17} />
-          </button>
-          <button onClick={handleDelete} aria-label="Delete" className="hover:text-red-500">
-            <Trash2 size={17} />
-          </button>
-        </div>
+        ) : (
+          <span>{format(new Date(entry.entryDate), "EEEE, MMMM d, yyyy")}</span>
+        )}
+
+        {isOwner && (
+          <div className="flex items-center gap-3">
+            <Link href={`/journal/${entry.id}/edit`} aria-label="Edit" className="hover:text-ink">
+              <Pencil size={17} />
+            </Link>
+            <button onClick={() => setShareOpen(true)} aria-label="Share" className="hover:text-ink">
+              <Share2 size={17} />
+            </button>
+            <button onClick={handleDelete} aria-label="Delete" className="hover:text-red-500">
+              <Trash2 size={17} />
+            </button>
+          </div>
+        )}
       </div>
 
       <h1 className="mb-3 font-serif text-3xl leading-tight sm:text-4xl">{entry.title}</h1>
@@ -113,6 +137,16 @@ export default function JournalViewPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-8 flex items-center gap-6 border-y border-ink/8 py-4">
+        <LikeButton
+          journalEntryId={entry.id}
+          initialLiked={entry.likedByMe ?? false}
+          initialCount={entry.likeCount ?? 0}
+        />
+      </div>
+
+      <CommentSection journalEntryId={entry.id} entryOwnerId={entry.userId} />
 
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} journalEntryId={entry.id} />
     </article>

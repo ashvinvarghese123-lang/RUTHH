@@ -46,12 +46,27 @@ enum PermissionLevel {
   PARTNER
 }
 
+enum Visibility {
+  PUBLIC   // shows in everyone's feed
+  FRIENDS  // shows only to accepted friends' feeds
+  PRIVATE  // not in any feed; only direct shares (SharedEntry) apply
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 enum NotificationType {
   SHARED_JOURNAL
   NEW_COMMENT
   MEMORY_REMINDER
   WRITING_REMINDER
   ACCESS_REVOKED
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  NEW_LIKE
 }
 
 // ------------------------------------------------------------
@@ -79,6 +94,11 @@ model User {
 
   sharedByMe        SharedEntry[]   @relation("SharedByOwner")
   sharedWithMe      SharedEntry[]   @relation("SharedWithRecipient")
+
+  friendRequestsSent     Friendship[] @relation("FriendRequestsSent")
+  friendRequestsReceived Friendship[] @relation("FriendRequestsReceived")
+  likes                  Like[]
+  comments               Comment[]
 
   @@map("users")
 }
@@ -119,7 +139,7 @@ model JournalEntry {
   tags        String[] @default([])
 
   isFavorite  Boolean  @default(false)
-  isPrivate   Boolean  @default(true)
+  visibility  Visibility @default(PUBLIC)
   entryDate   DateTime @default(now()) // the date the entry is "about"
 
   createdAt   DateTime @default(now())
@@ -127,9 +147,12 @@ model JournalEntry {
 
   photos      Photo[]
   sharedWith  SharedEntry[]
+  likes       Like[]
+  comments    Comment[]
 
   @@index([userId, entryDate])
   @@index([userId, isFavorite])
+  @@index([visibility, entryDate])
   @@map("journal_entries")
 }
 
@@ -224,4 +247,61 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+// ------------------------------------------------------------
+// SOCIAL: friends, likes, comments, feed
+// ------------------------------------------------------------
+
+model Friendship {
+  id           String           @id @default(uuid())
+
+  requesterId  String
+  requester    User             @relation("FriendRequestsSent", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  addresseeId  String
+  addressee    User             @relation("FriendRequestsReceived", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  status       FriendshipStatus @default(PENDING)
+
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+  @@map("friendships")
+}
+
+model Like {
+  id             String       @id @default(uuid())
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, journalEntryId])
+  @@index([journalEntryId])
+  @@map("likes")
+}
+
+model Comment {
+  id             String       @id @default(uuid())
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  body           String
+
+  createdAt      DateTime     @default(now())
+
+  @@index([journalEntryId, createdAt])
+  @@map("comments")
 }

@@ -5,6 +5,8 @@ const moodEnum = z.enum([
   "ANGRY", "TIRED", "LOVED", "NEUTRAL", "HOPEFUL", "NOSTALGIC",
 ]);
 
+const visibilityEnum = z.enum(["PUBLIC", "FRIENDS", "PRIVATE"]);
+
 export const createJournalSchema = z.object({
   body: z.object({
     title: z.string().min(1, "Give your entry a title.").max(150),
@@ -15,7 +17,7 @@ export const createJournalSchema = z.object({
     weather: z.string().max(60).optional(),
     tags: z.array(z.string().max(30)).max(15).optional(),
     isFavorite: z.boolean().optional(),
-    isPrivate: z.boolean().optional(),
+    visibility: visibilityEnum.optional(),
     entryDate: z.string().datetime().optional(),
   }),
   query: z.object({}).optional(),

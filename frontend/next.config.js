@@ -8,7 +8,7 @@ const nextConfig = {
   },
   // In production, the browser only ever talks to this Vercel domain.
   // Requests to /api/v1/* are silently forwarded server-side to the Render
-  // backend (set via the BACKEND_URL env var, configured in Vercel only —
+  // backend (set via the BACKEND_URL env var, configured in Vercel only â€”
   // not needed locally). This makes the session cookie first-party from
   // the browser's point of view, avoiding third-party cookie blocking
   // that breaks cross-domain login sessions.
