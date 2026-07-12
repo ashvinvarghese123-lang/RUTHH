@@ -20,7 +20,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const visibleVisibilities = isOwner
     ? undefined // owner sees everything
     : viewerIsFriend
-    ? { in: ["PUBLIC", "FRIENDS"] as const }
+    ? { in: ["PUBLIC", "FRIENDS"] as ("PUBLIC" | "FRIENDS")[] }
     : ("PUBLIC" as const);
 
   const [journalCount, photoCount, sharedCount, friendCount] = await Promise.all([
@@ -68,3 +68,4 @@ export const uploadProfilePhoto = asyncHandler(async (req: Request, res: Respons
 
   return ok(res, { profile });
 });
+
