@@ -22,7 +22,7 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-ink/8 bg-paper px-5 py-8">
       <Link href="/home" className="mb-10 flex items-center gap-2 px-2">
-        <span className="font-serif text-2xl">Ruth</span>
+        <span className="flex items-center gap-2"><img src="/logo-mark.png" alt="" className="h-6 w-6 object-contain" /><span className="font-serif text-2xl">Ruth</span></span>
       </Link>
 
       <Link href="/journal/new" className="btn-primary mb-8 w-full">
@@ -71,3 +71,4 @@ export function Sidebar() {
     </aside>
   );
 }
+
