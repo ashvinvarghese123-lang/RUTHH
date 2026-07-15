@@ -139,6 +139,7 @@ model JournalEntry {
   tags        String[] @default([])
 
   isFavorite  Boolean  @default(false)
+  isPinned    Boolean  @default(false)
   visibility  Visibility @default(PUBLIC)
   entryDate   DateTime @default(now()) // the date the entry is "about"
 
@@ -152,6 +153,7 @@ model JournalEntry {
 
   @@index([userId, entryDate])
   @@index([userId, isFavorite])
+  @@index([userId, isPinned])
   @@index([visibility, entryDate])
   @@map("journal_entries")
 }
@@ -227,6 +229,7 @@ model Settings {
   reminderHour       Int      @default(20)
   memoryReminders    Boolean  @default(true)
   emailNotifications Boolean  @default(true)
+  defaultVisibility  Visibility @default(PUBLIC) // default privacy for new journal entries
 
   updatedAt          DateTime @updatedAt
 

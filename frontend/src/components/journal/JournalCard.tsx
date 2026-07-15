@@ -2,13 +2,22 @@
 
 import Link from "next/link";
 import { format } from "date-fns";
-import { Heart, Lock, Users, Globe, MessageCircle } from "lucide-react";
+import { Heart, Lock, Users, Globe, MessageCircle, Pin } from "lucide-react";
 import { JournalEntry, MOODS } from "@/types";
 import { LikeButton } from "@/components/journal/LikeButton";
 
 const VISIBILITY_ICON = { PUBLIC: Globe, FRIENDS: Users, PRIVATE: Lock };
 
-export function JournalCard({ entry, showAuthor = false }: { entry: JournalEntry; showAuthor?: boolean }) {
+export function JournalCard({
+  entry,
+  showAuthor = false,
+  ownerMenu,
+}: {
+  entry: JournalEntry;
+  showAuthor?: boolean;
+  /** Optional overflow-menu element (e.g. <JournalOwnerMenu />), shown top-right when you own the entry. */
+  ownerMenu?: React.ReactNode;
+}) {
   const mood = MOODS.find((m) => m.value === entry.mood);
   const cover = entry.photos?.[0];
   const plainText = entry.content.replace(/<[^>]+>/g, " ").trim();
@@ -16,7 +25,9 @@ export function JournalCard({ entry, showAuthor = false }: { entry: JournalEntry
   const showSocial = entry.likeCount !== undefined;
 
   return (
-    <div className="paper-card group flex flex-col overflow-hidden transition-shadow hover:shadow-lift">
+    <div className="paper-card group relative flex flex-col overflow-hidden transition-shadow hover:shadow-lift">
+      {ownerMenu && <div className="absolute right-3 top-3 z-10">{ownerMenu}</div>}
+
       {showAuthor && entry.user && (
         <Link
           href={`/profile/${entry.user.username}`}
@@ -48,7 +59,10 @@ export function JournalCard({ entry, showAuthor = false }: { entry: JournalEntry
         )}
         <div className="flex flex-1 flex-col gap-2 p-5">
           <div className="flex items-center justify-between text-xs text-ink/45">
-            <span>{format(new Date(entry.entryDate), "MMM d, yyyy")}</span>
+            <span className="flex items-center gap-1.5">
+              {entry.isPinned && <Pin size={12} className="fill-ink/60 text-ink/60" />}
+              {format(new Date(entry.entryDate), "MMM d, yyyy")}
+            </span>
             <div className="flex items-center gap-2">
               {entry.isFavorite && <Heart size={14} className="fill-ink/70 text-ink/70" />}
               <VisibilityIcon size={13} />

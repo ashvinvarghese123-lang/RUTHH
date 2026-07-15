@@ -6,6 +6,7 @@ import { validate } from "../middleware/validate.middleware";
 import {
   signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, verifyEmailSchema,
 } from "../validators/auth.validator";
+import { changePasswordSchema, changeEmailSchema } from "../validators/profile.validator";
 
 const router = Router();
 
@@ -17,5 +18,7 @@ router.get("/verify-email/:token", validate(verifyEmailSchema), authController.v
 router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.post("/reset-password", authLimiter, validate(resetPasswordSchema), authController.resetPassword);
 router.get("/me", requireAuth, authController.me);
+router.post("/change-password", requireAuth, validate(changePasswordSchema), authController.changePassword);
+router.post("/change-email", requireAuth, validate(changeEmailSchema), authController.changeEmail);
 
 export default router;

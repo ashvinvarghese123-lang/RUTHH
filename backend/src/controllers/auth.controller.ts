@@ -166,6 +166,55 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
   return ok(res, { user: publicUser(user) });
 });
 
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user!.userId;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !(await comparePassword(currentPassword, user.passwordHash))) {
+    throw new ApiError(401, "Your current password is incorrect.");
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  // Sign out everywhere else for security, keep the current session alive
+  // by leaving its refresh token in place (login flow re-issues it anyway).
+  await prisma.session.deleteMany({ where: { userId } });
+
+  return ok(res, { changed: true });
+});
+
+export const changeEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { newEmail, password } = req.body;
+  const userId = req.user!.userId;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !(await comparePassword(password, user.passwordHash))) {
+    throw new ApiError(401, "Your password is incorrect.");
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email: newEmail } });
+  if (existing && existing.id !== userId) {
+    throw new ApiError(409, "That email is already in use by another account.");
+  }
+
+  const emailVerifyToken = generateToken();
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      email: newEmail,
+      isEmailVerified: false,
+      emailVerifyToken,
+      emailVerifyExpiry: expiryFromNow(48),
+    },
+  });
+
+  await emailService.sendVerificationEmail(newEmail, emailVerifyToken);
+
+  return ok(res, { changed: true, email: newEmail });
+});
+
 // ------------------------------------------------------------
 // helpers
 // ------------------------------------------------------------

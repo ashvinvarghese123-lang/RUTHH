@@ -12,10 +12,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </Float>
 
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex flex-col items-center gap-2 text-center font-serif text-2xl"><img src="/logo-mark.png" alt="" className="h-10 w-10 object-contain" />Ruth</Link>
+        <Link href="/" className="mb-8 flex flex-col items-center gap-2 text-center font-serif text-2xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="" className="h-10 w-10 object-contain" />
+          Ruth
+        </Link>
         <div className="paper-card p-6 sm:p-8">{children}</div>
       </div>
     </main>
   );
 }
-

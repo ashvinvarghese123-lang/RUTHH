@@ -91,9 +91,10 @@ export const listJournals = asyncHandler(async (req: Request, res: Response) => 
   const { page, limit, favoritesOnly, tag } = req.query as unknown as {
     page: number; limit: number; favoritesOnly?: boolean; tag?: string;
   };
+  const meId = req.user!.userId;
 
   const where = {
-    userId: req.user!.userId,
+    userId: meId,
     ...(favoritesOnly ? { isFavorite: true } : {}),
     ...(tag ? { tags: { has: tag } } : {}),
   };
@@ -101,15 +102,24 @@ export const listJournals = asyncHandler(async (req: Request, res: Response) => 
   const [entries, total] = await Promise.all([
     prisma.journalEntry.findMany({
       where,
-      orderBy: { entryDate: "desc" },
+      orderBy: [{ isPinned: "desc" }, { entryDate: "desc" }],
       skip: (page - 1) * limit,
       take: limit,
-      include: { photos: { orderBy: { position: "asc" }, take: 4 } },
+      include: {
+        photos: { orderBy: { position: "asc" }, take: 4 },
+        likes: { where: { userId: meId }, select: { id: true } },
+        _count: { select: { likes: true, comments: true } },
+      },
     }),
     prisma.journalEntry.count({ where }),
   ]);
 
-  return ok(res, { entries, total, page, limit, totalPages: Math.ceil(total / limit) });
+  const shaped = entries.map((e) => {
+    const { likes, _count, ...rest } = e;
+    return { ...rest, likeCount: _count.likes, commentCount: _count.comments, likedByMe: likes.length > 0 };
+  });
+
+  return ok(res, { entries: shaped, total, page, limit, totalPages: Math.ceil(total / limit) });
 });
 
 /** "One year ago today", "Two years ago today", etc. */

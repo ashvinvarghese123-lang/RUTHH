@@ -55,6 +55,7 @@ export interface JournalEntry {
   weather?: string | null;
   tags: string[];
   isFavorite: boolean;
+  isPinned: boolean;
   visibility: Visibility;
   entryDate: string;
   createdAt: string;

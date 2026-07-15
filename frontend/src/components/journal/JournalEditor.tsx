@@ -40,6 +40,19 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
   const [tagInput, setTagInput] = useState("");
   const [isFavorite, setIsFavorite] = useState(existingEntry?.isFavorite ?? false);
   const [visibility, setVisibility] = useState<Visibility>(existingEntry?.visibility ?? "PUBLIC");
+
+  // For brand-new entries, adopt the user's default-privacy setting once it loads.
+  useEffect(() => {
+    if (existingEntry) return;
+    api
+      .get("/settings")
+      .then((res) => {
+        const def = res.data?.data?.settings?.defaultVisibility;
+        if (def) setVisibility(def);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [photos, setPhotos] = useState<Photo[]>(existingEntry?.photos ?? []);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -89,16 +102,27 @@ export function JournalEditor({ existingEntry }: { existingEntry?: JournalEntry 
         setId(entry.id);
 
         if (stagedFiles.length) {
-          const formData = new FormData();
-          formData.append("journalEntryId", entry.id);
-          stagedFiles.forEach((f) => formData.append("photos", f));
-          const { photos: uploaded } = await unwrap<{ photos: Photo[] }>(
-            api.post("/photos", formData, { headers: { "Content-Type": "multipart/form-data" } })
-          );
-          setPhotos(uploaded);
+          try {
+            const formData = new FormData();
+            formData.append("journalEntryId", entry.id);
+            stagedFiles.forEach((f) => formData.append("photos", f));
+            const { photos: uploaded } = await unwrap<{ photos: Photo[] }>(
+              api.post("/photos", formData, { headers: { "Content-Type": "multipart/form-data" } })
+            );
+            setPhotos(uploaded);
+            show("Your entry has been saved.");
+          } catch (photoErr: any) {
+            // The entry itself saved fine — only the photo upload failed.
+            // Don't block navigation or claim the whole save failed.
+            show(
+              photoErr?.response?.data?.message ?? "Your entry was saved, but the photos couldn't upload.",
+              "error"
+            );
+          }
+        } else {
+          show("Your entry has been saved.");
         }
 
-        show("Your entry has been saved.");
         router.push(`/journal/${entry.id}`);
       } else {
         await api.patch(`/journals/${id}`, {

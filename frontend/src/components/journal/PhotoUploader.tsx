@@ -60,8 +60,8 @@ export function PhotoUploader({
         api.post("/photos", formData, { headers: { "Content-Type": "multipart/form-data" } })
       );
       onPhotosChange([...photos, ...uploaded]);
-    } catch {
-      show("Couldn't upload one or more photos. Please try again.", "error");
+    } catch (err: any) {
+      show(err?.response?.data?.message ?? "Couldn't upload one or more photos. Please try again.", "error");
     } finally {
       setIsUploading(false);
     }

@@ -40,7 +40,9 @@ export default function LandingPage() {
           <FoldedPaper size={40} />
         </Float>
 
-        <img src="/logo-mark.png" alt="" className="mb-4 h-14 w-14 object-contain" /><p className="mb-5 text-xs uppercase tracking-[0.3em] text-ink/50">Ruth</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-mark.png" alt="" className="mb-4 h-14 w-14 object-contain" />
+        <p className="mb-5 text-xs uppercase tracking-[0.3em] text-ink/50">Ruth</p>
         <h1 className="max-w-3xl text-balance font-serif text-4xl leading-[1.1] sm:text-5xl md:text-7xl">
           Document Yourself
         </h1>
@@ -90,4 +92,3 @@ export default function LandingPage() {
     </main>
   );
 }
-

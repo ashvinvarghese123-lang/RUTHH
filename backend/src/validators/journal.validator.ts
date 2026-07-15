@@ -17,6 +17,7 @@ export const createJournalSchema = z.object({
     weather: z.string().max(60).optional(),
     tags: z.array(z.string().max(30)).max(15).optional(),
     isFavorite: z.boolean().optional(),
+    isPinned: z.boolean().optional(),
     visibility: visibilityEnum.optional(),
     entryDate: z.string().datetime().optional(),
   }),
